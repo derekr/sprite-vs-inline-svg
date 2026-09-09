@@ -1,0 +1,177 @@
+{
+  "rows": 1000,
+  "runs": 7,
+  "order": [
+    "inline",
+    "sprite"
+  ],
+  "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+  "inline": {
+    "bytes": 1812308,
+    "gz": 40401,
+    "nodes": 24009,
+    "mounts": {
+      "n": 7,
+      "mean": 40.7428571326392,
+      "median": 40.60000002384186,
+      "p95": 44.89999997615814,
+      "min": 38.39999997615814,
+      "max": 44.89999997615814,
+      "sd": 1.9433822797423652
+    },
+    "morphs": {
+      "n": 7,
+      "mean": 60.542857136045185,
+      "median": 59.5,
+      "p95": 68.5,
+      "min": 54.199999928474426,
+      "max": 68.5,
+      "sd": 5.6104130998405735
+    },
+    "smallMorphs": {
+      "n": 7,
+      "mean": 61.61428572450365,
+      "median": 57.700000047683716,
+      "p95": 74.39999997615814,
+      "min": 54.90000009536743,
+      "max": 74.39999997615814,
+      "sd": 6.718509300124338
+    },
+    "layouts": {
+      "n": 7,
+      "mean": 4.171428595270429,
+      "median": 4.200000047683716,
+      "p95": 4.399999976158142,
+      "min": 4,
+      "max": 4.399999976158142,
+      "sd": 0.13850514370152686
+    },
+    "svgInstances": 4000
+  },
+  "sprite": {
+    "bytes": 1372976,
+    "gz": 36390,
+    "nodes": 19026,
+    "mounts": {
+      "n": 7,
+      "mean": 54.52857138429369,
+      "median": 51.39999997615814,
+      "p95": 64,
+      "min": 50.09999990463257,
+      "max": 64,
+      "sd": 5.7596414358868895
+    },
+    "morphs": {
+      "n": 7,
+      "mean": 50.057142870766775,
+      "median": 46.700000047683716,
+      "p95": 61.300000071525574,
+      "min": 43.60000002384186,
+      "max": 61.300000071525574,
+      "sd": 6.984443371252676
+    },
+    "smallMorphs": {
+      "n": 7,
+      "mean": 44.44285714626312,
+      "median": 44.199999928474426,
+      "p95": 47.200000047683716,
+      "min": 42.60000002384186,
+      "max": 47.200000047683716,
+      "sd": 1.6783130580536665
+    },
+    "layouts": {
+      "n": 7,
+      "mean": 9.30000000340598,
+      "median": 8.899999976158142,
+      "p95": 12.800000071525574,
+      "min": 8.200000047683716,
+      "max": 12.800000071525574,
+      "sd": 1.4870872932514412
+    },
+    "svgInstances": 4000
+  },
+  "traced": {
+    "inline": {
+      "metricsDelta": {
+        "Nodes": 215043,
+        "JSEventListeners": 0,
+        "LayoutCount": 3,
+        "RecalcStyleCount": 2,
+        "LayoutDuration": 0.0246,
+        "RecalcStyleDuration": 0.0144,
+        "ScriptDuration": 0,
+        "TaskDuration": 0.1238,
+        "JSHeapUsedSize": 13793360,
+        "JSHeapTotalSize": 79806464
+      },
+      "trace": {
+        "mainThread": "45803:12721852",
+        "selfTime": true,
+        "wallMs": 117.3,
+        "busyMs": 61.39,
+        "groupsMs": {
+          "Scripting": 0.01,
+          "Rendering": 0.34,
+          "Painting": 0.06,
+          "Loading": 21.85,
+          "Other": 39.13
+        },
+        "topEventsMs": {
+          "LocalFrameView::performLayout": 22.7,
+          "ParseHTML": 21.85,
+          "Document::recalcStyle": 10.04,
+          "Document::rebuildLayoutTree": 4.36,
+          "InlineNode::ShapeTextIncludingFirstLine": 1.54,
+          "Layout": 0.32,
+          "InlineNode::SetTextWithOffset": 0.08,
+          "Paint": 0.06,
+          "V8.GC_HEAP_ENSURE_SWEEPING_COMPLETED": 0.06,
+          "ProxyMain::BeginMainFrame": 0.03,
+          "Document::updateStyle": 0.03,
+          "Blink.Layout.UpdateTime": 0.03
+        }
+      }
+    },
+    "sprite": {
+      "metricsDelta": {
+        "Nodes": 200477,
+        "JSEventListeners": 0,
+        "LayoutCount": 3,
+        "RecalcStyleCount": 3,
+        "LayoutDuration": 0.0333,
+        "RecalcStyleDuration": 0.0339,
+        "ScriptDuration": 0,
+        "TaskDuration": 0.1582,
+        "JSHeapUsedSize": 25958424,
+        "JSHeapTotalSize": 81723392
+      },
+      "trace": {
+        "mainThread": "45803:12721852",
+        "selfTime": true,
+        "wallMs": 154.09,
+        "busyMs": 100.32,
+        "groupsMs": {
+          "Scripting": 0.01,
+          "Rendering": 9.91,
+          "Painting": 0.07,
+          "Loading": 32.7,
+          "Other": 57.65
+        },
+        "topEventsMs": {
+          "ParseHTML": 32.7,
+          "LocalFrameView::performLayout": 30.65,
+          "Document::recalcStyle": 17.35,
+          "UpdateLayoutTree": 8.95,
+          "Document::rebuildLayoutTree": 7.55,
+          "InlineNode::ShapeTextIncludingFirstLine": 1.66,
+          "Layout": 0.96,
+          "InlineNode::SetTextWithOffset": 0.11,
+          "Paint": 0.07,
+          "HTMLDocumentParser::HTMLDocumentParser": 0.03,
+          "Document::updateStyle": 0.02,
+          "Blink.Layout.UpdateTime": 0.02
+        }
+      }
+    }
+  }
+}

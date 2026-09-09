@@ -1,0 +1,5 @@
+# generated / local-only
+node_modules/
+trace-*.json
+payload-*.html
+results-reversed.json

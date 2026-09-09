@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SVG Sprite vs Inline Morph Benchmark</title>
+<style>
+  body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; color: #111; }
+  table.bench { border-collapse: collapse; margin-top: 16px; }
+  table.bench th, table.bench td { border: 1px solid #ccc; padding: 6px 10px; font-variant-numeric: tabular-nums; text-align: right; }
+  table.bench th:first-child, table.bench td:first-child { text-align: left; }
+  #grid-holder { position: absolute; left: -10000px; top: 0; width: 1200px; }
+  .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+  .badge.active { background: #dcfce7; } .badge.archived { background: #fee2e2; }
+  .actions { display: flex; gap: 6px; }
+  .icon { display: inline-block; vertical-align: middle; }
+  button.run { padding: 8px 16px; font-size: 15px; }
+  pre { background: #f6f6f6; padding: 12px; overflow: auto; }
+</style>
+</head>
+<body>
+<h1>SVG sprite (<code>&lt;use&gt;</code>) vs inline SVG under fat-morph updates</h1>
+<p>
+  Realistic datagrid: <b id="rows-label">1000</b> rows × 4 action icons
+  (edit / delete / view / star). Measures initial mount + full-table morph
+  (the Datastar <code>datastar-patch-elements</code> fat-morph path, via Idiomorph).
+</p>
+<div>
+  <label>Rows <input id="rows" type="number" value="1000" min="10" max="5000" step="10"></label>
+  <label>Runs <input id="runs" type="number" value="7" min="3" max="25"></label>
+  <button class="run" id="run">Run benchmark</button>
+  <span id="status"></span>
+</div>
+<div id="results"></div>
+<h2>Test surface (off-screen, real layout)</h2>
+<div id="grid-holder" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/idiomorph@0.7.3/dist/idiomorph.min.js"></script>
+<script>
+// ---- Realistic Feather-style icons (24x24, stroke) ----
+const ICONS = {
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  starFill: '<polygon fill="currentColor" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+};
+const ICON_NAMES = ['edit', 'trash', 'eye', 'star'];
+const SVG_OPEN_INLINE = (extra='') => `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>`;
+const SVG_OPEN_USE = `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`;
+
+function spriteDefs() {
+  return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>` +
+    ICON_NAMES.concat(['starFill']).map(n => `<symbol id="i-${n}" viewBox="0 0 24 24">${ICONS[n]}</symbol>`).join('') +
+    `</defs></svg>`;
+}
+function iconInline(name) { return `${SVG_OPEN_INLINE()}>${ICONS[name]}</svg>`; }
+function iconUse(name) { return `${SVG_OPEN_USE}><use href="#i-${name}"></use></svg>`; }
+
+function rowHTML(i, tick, mode) {
+  const archived = ((i * 2654435761 + tick * 97) >>> 0) % 5 === 0; // ~20% flipped per tick, deterministic
+  const status = archived ? 'archived' : 'active';
+  const star = ((i + tick) % 3 === 0) ? 'starFill' : 'star';
+  const ic = mode === 'inline' ? iconInline : iconUse;
+  return `<tr id="row-${i}" data-row="${i}">` +
+    `<td>${i}</td><td>Acme Corp ${i}</td>` +
+    `<td><span class="badge ${status}">${status}</span></td>` +
+    `<td><div class="actions" role="group" aria-label="Row ${i} actions">` +
+    `<button type="button" data-action="edit" aria-label="Edit row ${i}">${ic('edit')}</button>` +
+    `<button type="button" data-action="delete" aria-label="Delete row ${i}">${ic('trash')}</button>` +
+    `<button type="button" data-action="view" aria-label="View row ${i}">${ic('eye')}</button>` +
+    `<button type="button" data-action="star" aria-label="Star row ${i}" aria-pressed="${star === 'starFill'}">${ic(star)}</button>` +
+    `</div></td></tr>`;
+}
+function tableHTML(nrows, tick, mode) {
+  // Single-root wrapper: Idiomorph.morph(target, html) needs target and new
+  // content to correspond 1:1, otherwise it duplicates instead of morphing.
+  let s = `<div id="app" data-tick="${tick}">` + (mode === 'sprite' ? spriteDefs() : '') +
+    `<table id="grid"><thead><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+  for (let i = 0; i < nrows; i++) s += rowHTML(i, tick, mode);
+  return s + `</tbody></table></div>`;
+}
+
+async function gzipBytes(str) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const cs = new CompressionStream('gzip');
+  const w = cs.writable.getWriter();
+  w.write(new TextEncoder().encode(str)); w.close();
+  const chunks = [];
+  const r = cs.readable.getReader();
+  for (;;) { const { done, value } = await r.read(); if (done) break; chunks.push(value); }
+  return chunks.reduce((a, c) => a + c.length, 0);
+}
+const stats = a => {
+  const s = [...a].sort((x, y) => x - y);
+  const mean = s.reduce((x, y) => x + y, 0) / s.length;
+  const sd = Math.sqrt(s.reduce((x, y) => x + (y - mean) ** 2, 0) / s.length);
+  return { n: s.length, mean, median: s[s.length >> 1], p95: s[Math.min(s.length - 1, Math.ceil(s.length * 0.95) - 1)], min: s[0], max: s[s.length - 1], sd };
+};
+const forceLayout = el => { void el.offsetHeight; return el.querySelectorAll('*').length; };
+
+async function benchVariant(nrows, tickA, tickB, runs, holder) {
+  const htmlA = tableHTML(nrows, tickA, currentMode);
+  const htmlB = tableHTML(nrows, tickB, currentMode);
+  const bytes = new TextEncoder().encode(htmlA).length;
+  const gz = await gzipBytes(htmlA);
+  const mounts = [], morphs = [], smallMorphs = [], layouts = [];
+  let nodes = 0;
+  // warmup
+  for (let w = 0; w < 2; w++) {
+    holder.innerHTML = htmlA; forceLayout(holder);
+    Idiomorph.morph(holder.firstElementChild, htmlB); forceLayout(holder);
+  }
+  if (globalThis.gc) globalThis.gc();
+  for (let r = 0; r < runs; r++) {
+    // alternate direction to avoid biased caching
+    const from = r % 2 ? htmlB : htmlA, to = r % 2 ? htmlA : htmlB;
+    holder.innerHTML = '';
+    let t0 = performance.now();
+    holder.innerHTML = from;
+    nodes = forceLayout(holder);
+    mounts.push(performance.now() - t0);
+    t0 = performance.now();
+    Idiomorph.morph(holder.firstElementChild, to);
+    morphs.push(performance.now() - t0);
+    t0 = performance.now();
+    forceLayout(holder);
+    layouts.push(performance.now() - t0);
+    // small patch: single-row change morphed against full table
+    const single = from.replace(`id="row-7"`, `id="row-7"`).replace(/Acme Corp 7<\/td>/, 'Acme Corp 7 • updated</td>');
+    t0 = performance.now();
+    Idiomorph.morph(holder.firstElementChild, single);
+    smallMorphs.push(performance.now() - t0);
+  }
+  return { bytes, gz, nodes, mounts: stats(mounts), morphs: stats(morphs), smallMorphs: stats(smallMorphs), layouts: stats(layouts) };
+}
+
+let currentMode = 'inline';
+async function runAll() {
+  const nrows = Math.max(10, parseInt(document.getElementById('rows').value, 10) || 1000);
+  const runs = Math.max(3, parseInt(document.getElementById('runs').value, 10) || 7);
+  document.getElementById('rows-label').textContent = nrows;
+  const holder = document.getElementById('grid-holder');
+  const status = document.getElementById('status');
+  const out = {};
+  for (const mode of ['inline', 'sprite']) {
+    currentMode = mode;
+    status.textContent = `Running ${mode}…`;
+    await new Promise(r => setTimeout(r, 30));
+    out[mode] = await benchVariant(nrows, 0, 1, runs, holder);
+    out[mode].svgInstances = nrows * 4;
+  }
+  renderResults(out, nrows, runs);
+  console.log('BENCH_JSON:' + JSON.stringify({ nrows, runs, ua: navigator.userAgent, ...out }));
+  document.title = 'BENCH_DONE';
+  status.textContent = 'Done.';
+  holder.innerHTML = '';
+  return out;
+}
+
+function fmt(n, d = 2) { return Number(n).toFixed(d); }
+function renderResults(out, nrows, runs) {
+  const R = id => document.getElementById(id);
+  const pct = (a, b) => ((a - b) / b * 100);
+  const row = (label, f, unit = ' ms') => `<tr><td>${label}</td><td>${fmt(f(out.inline))}${unit}</td><td>${fmt(f(out.sprite))}${unit}</td><td>${fmt(pct(f(out.sprite), f(out.inline)), 1)}%</td></tr>`;
+  document.getElementById('results').innerHTML = `
+  <p>${nrows} rows × 4 icons = <b>${(nrows * 4).toLocaleString()} SVG instances</b>, ${runs} measured runs each (2 warmup), alternating direction, off-screen but laid out. Negative % = sprite faster/smaller.</p>
+  <table class="bench">
+    <tr><th>Metric</th><th>Inline (morph raw SVG)</th><th>Sprite (<code>&lt;use&gt;</code>)</th><th>Δ</th></tr>
+    <tr><td>HTML bytes</td><td>${out.inline.bytes.toLocaleString()}</td><td>${out.sprite.bytes.toLocaleString()}</td><td>${fmt(pct(out.sprite.bytes, out.inline.bytes), 1)}%</td></tr>
+    <tr><td>gzip bytes</td><td>${out.inline.gz?.toLocaleString() ?? 'n/a'}</td><td>${out.sprite.gz?.toLocaleString() ?? 'n/a'}</td><td>${out.inline.gz ? fmt(pct(out.sprite.gz, out.inline.gz), 1) + '%' : 'n/a'}</td></tr>
+    <tr><td>DOM nodes</td><td>${out.inline.nodes.toLocaleString()}</td><td>${out.sprite.nodes.toLocaleString()}</td><td>${fmt(pct(out.sprite.nodes, out.inline.nodes), 1)}%</td></tr>
+    ${row('Initial mount (mean)', x => x.mounts.mean)}
+    ${row('Initial mount (median)', x => x.mounts.median)}
+    ${row('Fat morph full-table (mean)', x => x.morphs.mean)}
+    ${row('Fat morph full-table (median)', x => x.morphs.median)}
+    ${row('Fat morph (p95)', x => x.morphs.p95)}
+    ${row('Single-row morph vs full table (mean)', x => x.smallMorphs.mean)}
+    ${row('Forced layout after morph (mean)', x => x.layouts.mean)}
+  </table>
+  <pre id="statdump">${JSON.stringify({ nrows, runs, inline: summarize(out.inline), sprite: summarize(out.sprite) }, null, 2)}</pre>`;
+}
+const summarize = v => ({ bytes: v.bytes, gz: v.gz, nodes: v.nodes, mounts: v.mounts, morphs: v.morphs, smallMorphs: v.smallMorphs, layouts: v.layouts });
+
+document.getElementById('run').addEventListener('click', runAll);
+const q = new URLSearchParams(location.search);
+if (q.get('rows')) document.getElementById('rows').value = q.get('rows');
+if (q.get('runs')) document.getElementById('runs').value = q.get('runs');
+if (q.get('autorun') === '1') { window.addEventListener('load', () => setTimeout(runAll, 500)); }
+</script>
+</body>
+</html>
