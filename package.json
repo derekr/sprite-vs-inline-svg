@@ -6,7 +6,8 @@
     "bench": "node run-headless.mjs",
     "bench:reverse": "REVERSE=1 node run-headless.mjs",
     "mem": "node mem.mjs",
-    "compress": "node compress.mjs"
+    "compress": "node compress.mjs",
+    "shot": "node shot.mjs"
   },
   "keywords": [],
   "author": "",

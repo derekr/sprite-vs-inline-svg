@@ -38,6 +38,8 @@ Sprites still win for **static, rarely-morphed** regions (zero re-diff cost,
 smaller DOM). They cost you `href`/`xlink:href` legacy quirks, CSP/`file://`
 edge cases, and no page-CSS styling inside `<use>` shadow DOM.
 
+![Benchmark results table](screenshot.png)
+
 ## Run it
 
 ```sh
