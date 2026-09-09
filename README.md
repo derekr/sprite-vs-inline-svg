@@ -34,7 +34,9 @@ style-resolved at layout time (`recalcStyle` 10→17 ms, plus an
 `UpdateLayoutTree` pass inline doesn't pay). Brotli's larger window dedupes
 repeated SVG so well the wire advantage is ~0.4 KB. Verified adversarially:
 harness assertions, reversed run order (63.7 vs 63.7 ms), gzip cross-checked
-against Node `zlib` — see [ANALYSIS.md](ANALYSIS.md).
+against Node `zlib`, and page isolation (fresh browser per variant matches
+shared-page runs — the side-by-side preview is screenshot-only) — see
+[ANALYSIS.md](ANALYSIS.md).
 
 Sprites still win for **static, rarely-morphed** regions (zero re-diff cost,
 smaller DOM). They cost you `href`/`xlink:href` legacy quirks, CSP/`file://`
