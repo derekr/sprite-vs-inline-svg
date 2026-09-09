@@ -101,6 +101,12 @@ The harness tried to prove itself wrong, and once succeeded:
    brotli computed independently in Node on the same payload strings.
 4. **Trace accounting.** An early summarizer double-counted nested slices;
    replaced with self-time (interval-containment) accounting — the table above.
+5. **Page isolation.** The preview page renders both variants side by side,
+   but it is screenshot-only — measurement always mounts one variant at a
+   time. To rule out shared GC/JIT state anyway, `node isolate.mjs`
+   benchmarks each variant in its own fresh browser process: inline
+   morph 61.1/layout 4.3 ms, sprite morph 51.7/layout 9.8 ms — within noise
+   of the shared-page runs. Isolation doesn't move the numbers.
 
 ### Memory / DOM weight
 
