@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid preview — inline SVG vs sprite</title>
+<style>
+  body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; color: #111; }
+  .panels { display: flex; gap: 32px; align-items: flex-start; }
+  .panel { flex: 1; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 14px; }
+  thead th { background: #f4f4f4; }
+  .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+  .badge.active { background: #dcfce7; } .badge.archived { background: #fee2e2; }
+  .actions { display: flex; gap: 6px; }
+  .actions button { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 3px 5px; cursor: default; }
+  .icon { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1>What the benchmark renders (8 of 1000 rows)</h1>
+<div class="panels">
+  <div class="panel"><h2>Inline SVG</h2><div id="inline"></div></div>
+  <div class="panel"><h2>Sprite (<code>&lt;use&gt;</code>)</h2><div id="sprite"></div></div>
+</div>
+<script>
+const ICONS = {
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+};
+const OPEN = '<svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const inlineIcon = (n) => `${OPEN}>${ICONS[n]}</svg>`;
+const useIcon = (n) => `${OPEN}><use href="#i-${n}"></use></svg>`;
+const defs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>` +
+  Object.keys(ICONS).map((n) => `<symbol id="i-${n}" viewBox="0 0 24 24">${ICONS[n]}</symbol>`).join('') + `</defs></svg>`;
+function rows(ic) {
+  let s = '';
+  for (let i = 0; i < 8; i++) {
+    const archived = i % 5 === 0;
+    s += `<tr><td>${i}</td><td>Acme Corp ${i}</td>` +
+      `<td><span class="badge ${archived ? 'archived' : 'active'}">${archived ? 'archived' : 'active'}</span></td>` +
+      `<td><div class="actions">` +
+      `<button aria-label="Edit">${ic('edit')}</button><button aria-label="Delete">${ic('trash')}</button>` +
+      `<button aria-label="View">${ic('eye')}</button><button aria-label="Star">${ic('star')}</button>` +
+      `</div></td></tr>`;
+  }
+  return `<table><thead><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead><tbody>${s}</tbody></table>`;
+}
+document.getElementById('inline').innerHTML = rows(inlineIcon);
+document.getElementById('sprite').innerHTML = defs + rows(useIcon);
+</script>
+</body>
+</html>

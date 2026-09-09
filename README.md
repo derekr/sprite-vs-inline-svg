@@ -14,6 +14,8 @@ of just morphing raw inline SVG?
 `datastar-patch-elements`), measured in headless Chrome over 7 runs per
 variant, plus DevTools timeline traces and CDP metrics.
 
+![Rendered datagrid: inline SVG vs sprite, visually identical](screenshot-table.png)
+
 ## Results (1000 rows)
 
 | Metric | Inline SVG | Sprite (`<use>`) |

@@ -23,4 +23,10 @@ try {
   });
   await page.screenshot({ path: DIR + 'screenshot.png', clip });
   console.log('WROTE screenshot.png');
+
+  // Data-table preview (the actual rendered grid subject).
+  await page.goto('file://' + DIR + 'preview.html', { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => document.querySelectorAll('#sprite use').length === 32);
+  await page.screenshot({ path: DIR + 'screenshot-table.png', fullPage: true });
+  console.log('WROTE screenshot-table.png');
 } finally { await browser.close(); }
